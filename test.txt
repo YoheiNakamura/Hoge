@@ -29,13 +29,12 @@
 </html>
 
 
-
-
 const CANVAS_WIDTH = "600";
 const CANVAS_HEIGHT = "450";
 
-var Banner = function(label, bgcolor, fontsize, fontstyle, fontcolor, text, width, height, px, py) {
+var Banner = function(label, bgcolor, fontsize, fontstyle, fontcolor, text, width, height, px, py, horizontalAlign, verticalAlign) {
     
+    //初期処理
     this.label = label;
     this.bgcolor = bgcolor;
     this.fontsize = fontsize;
@@ -46,7 +45,10 @@ var Banner = function(label, bgcolor, fontsize, fontstyle, fontcolor, text, widt
     this.height = height;
     this.px = px;
     this.py = py;
+    this.horizontalAlign = horizontalAlign;
+    this.verticalAlign = verticalAlign;
 
+    //描画に必要なフォームのhtmlタグを生成します
     const inputForm = document.getElementById("input-form");
     var inputFormHtml =
         `
@@ -63,23 +65,44 @@ var Banner = function(label, bgcolor, fontsize, fontstyle, fontcolor, text, widt
         `;
     inputForm.insertAdjacentHTML("beforeend", inputFormHtml);
 
+    //キャンバスに描画
     this.drawBanner();
 }
 
 Banner.prototype = {
     
     drawBanner : function() {
-        var context = board.getContext("2d");
 
+        var context = board.getContext("2d");
+        //エリアを初期化
         context.clearRect(this.px, this.py, this.width, this.height);
 
+        //背景を描画
         context.fillStyle = this.bgcolor;
         context.fillRect(this.px, this.py, this.width, this.height);
         
+        //ここから下はテキストの描画
         context.font = `${this.fontsize}px ${this.fontstyle}`;
         context.fillStyle = this.fontcolor;
         context.textBaseline = "top";
-        context.fillText(this.text, this.px, this.py, this.width);
+
+        //改行に対応します。
+        var textNl = this.text.split('\n');
+        textNl.forEach(function(textEl, index){
+            console.log(textEl);
+            var textWidth = context.measureText(textEl).width ;
+            var textHeight =  context.measureText(textEl).actualBoundingBoxAscent + context.measureText(textEl).actualBoundingBoxDescent
+            
+            var x = this.px;
+            var y = this.py;
+            if(this.horizontalAlign == "center") {
+                x = (this.width - textWidth) / 2;
+            }
+            if(this.verticalAlign == "center") {
+                y = this.py + (this.height - textHeight * index) / 2;
+            }
+            context.fillText(textEl, x, y, this.width);
+        }, this);
     },
     setText : function(text) {
         this.text = text;
@@ -102,9 +125,9 @@ window.onload = ()=>{
     board.height = CANVAS_HEIGHT;
     
     var BannerArray = [];
-    BannerArray[0] = new Banner("Before", "#0FFFFF", 30, "meiryo", "#0000FF", "goodbye", CANVAS_WIDTH, CANVAS_HEIGHT * 0.2, 0, 0);
-    BannerArray[1] = new Banner("タイトル", "#888888", 40, "meiryo", "#000000", "Title", CANVAS_WIDTH, CANVAS_HEIGHT * 0.2, 0, CANVAS_HEIGHT * 0.2);
-    BannerArray[2] = new Banner("内容２", "#000FFF", 20, "meiryo", "#000000", "hoge", CANVAS_WIDTH, CANVAS_HEIGHT * 0.6, 0, CANVAS_HEIGHT * 0.4);
+    BannerArray[0] = new Banner("Before", "#0FFFFF", 30, "メイリオ", "#0000FF", "goodbye", CANVAS_WIDTH, CANVAS_HEIGHT * 0.2, 0, 0, "left", "center");
+    BannerArray[1] = new Banner("タイトル", "#888888", 40, "メイリオ", "#000000", "Title", CANVAS_WIDTH, CANVAS_HEIGHT * 0.2, 0, CANVAS_HEIGHT * 0.2, "center", "center");
+    BannerArray[2] = new Banner("内容２", "#000FFF", 20, "メイリオ", "#000000", "hoge", CANVAS_WIDTH, CANVAS_HEIGHT * 0.6, 0, CANVAS_HEIGHT * 0.4, "left", "center");
     
     const messages = document.getElementsByClassName("text-message");
     const colorTexts = document.getElementsByClassName("color-text");
