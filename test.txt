@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>CANVASテスト</title>
+    <link rel="stylesheet" href="css/style.css" type="text/css" media="all">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+</head>
+<body>
+<div id="container-fluid">
+    <div class="row">
+        <div class="col-md-6">
+            <canvas id="board"></canvas>
+        </div>
+        <div class="col-md-6">
+            <form id="frm">
+                <div id="input-form"></div>
+                <button type="button" id="btn-send" class="btn btn-primary">保存する</button>
+            </form>
+        </div>
+    </div>
+</div>
+<script src="js/app.js"></script>
+ <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+ <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+ <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+</body>
+</html>
+
+
+
+
+const CANVAS_WIDTH = "600";
+const CANVAS_HEIGHT = "450";
+
+var Banner = function(label, bgcolor, fontsize, fontstyle, fontcolor, text, width, height, px, py) {
+    
+    this.label = label;
+    this.bgcolor = bgcolor;
+    this.fontsize = fontsize;
+    this.fontstyle = fontstyle;
+    this.fontcolor = fontcolor;
+    this.text = text;
+    this.width = width;
+    this.height = height;
+    this.px = px;
+    this.py = py;
+
+    const inputForm = document.getElementById("input-form");
+    var inputFormHtml =
+        `
+            <p>${this.label}</p>
+            <span>文字色:</span>
+            <input class="color-text" type="color" value=${this.fontcolor}>
+            <span>背景色:</span>
+            <input class="color-bg" type="color" value=${this.bgcolor}>
+            <span>フォントサイズ:</span>
+            <input class="font-size" type="number" value=${this.fontsize}>
+            <br>
+            <textarea type="text" class="text-message" placeholder="文字を入力してください">${this.text}</textarea>
+            <br><br>
+        `;
+    inputForm.insertAdjacentHTML("beforeend", inputFormHtml);
+
+    this.drawBanner();
+}
+
+Banner.prototype = {
+    
+    drawBanner : function() {
+        var context = board.getContext("2d");
+
+        context.clearRect(this.px, this.py, this.width, this.height);
+
+        context.fillStyle = this.bgcolor;
+        context.fillRect(this.px, this.py, this.width, this.height);
+        
+        context.font = `${this.fontsize}px ${this.fontstyle}`;
+        context.fillStyle = this.fontcolor;
+        context.textBaseline = "top";
+        context.fillText(this.text, this.px, this.py, this.width);
+    },
+    setText : function(text) {
+        this.text = text;
+    },
+    setBgcolor : function(bgcolor) {
+        this.bgcolor = bgcolor;
+    },
+    setFontcolor : function(fontcolor) {
+        this.fontcolor = fontcolor;
+    },
+    setFontsize : function(fontsize) {
+        this.fontsize = fontsize;
+    }
+}
+
+window.onload = ()=>{
+
+    const board = document.getElementById("board");
+    board.width = CANVAS_WIDTH;
+    board.height = CANVAS_HEIGHT;
+    
+    var BannerArray = [];
+    BannerArray[0] = new Banner("Before", "#0FFFFF", 30, "meiryo", "#0000FF", "goodbye", CANVAS_WIDTH, CANVAS_HEIGHT * 0.2, 0, 0);
+    BannerArray[1] = new Banner("タイトル", "#888888", 40, "meiryo", "#000000", "Title", CANVAS_WIDTH, CANVAS_HEIGHT * 0.2, 0, CANVAS_HEIGHT * 0.2);
+    BannerArray[2] = new Banner("内容２", "#000FFF", 20, "meiryo", "#000000", "hoge", CANVAS_WIDTH, CANVAS_HEIGHT * 0.6, 0, CANVAS_HEIGHT * 0.4);
+    
+    const messages = document.getElementsByClassName("text-message");
+    const colorTexts = document.getElementsByClassName("color-text");
+    const colorBgs = document.getElementsByClassName("color-bg");
+    const fontSizes = document.getElementsByClassName("font-size");
+
+
+    // 文字入力のイベントを設定
+    Array.prototype.forEach.call(messages, function(message, index) {      
+        message.addEventListener("keyup", ()=>{
+            BannerArray[index].setText(message.value);
+            BannerArray[index].drawBanner();
+        });
+    });
+
+    // 文字色変更のイベントを設定
+    Array.prototype.forEach.call(colorTexts, function(colorText, index) {
+        colorText.addEventListener("change", ()=>{
+            BannerArray[index].setFontcolor(colorText.value);
+            BannerArray[index].drawBanner();
+        });
+    });
+
+    // 背景色変更のイベントを設定
+    Array.prototype.forEach.call(colorBgs, function(colorBg, index) {      
+        colorBg.addEventListener("change", ()=>{
+        BannerArray[index].setBgcolor(colorBg.value);
+        BannerArray[index].drawBanner();
+        })
+    });
+
+    // フォントサイズ変更のイベントを設定
+    Array.prototype.forEach.call(fontSizes, function(fontSize, index) {      
+        fontSize.addEventListener("change", ()=>{
+            BannerArray[index].setFontsize(fontSize.value);
+            BannerArray[index].drawBanner();
+        });
+    });
+
+    // submitイベントが発生したらキャンセル
+    document.querySelector("#frm").addEventListener("submit", (e)=>{
+        e.preventDefault();
+    });
+
+  //---------------------------------------------
+  // 保存ボタンが押されたらサーバへ送信する
+  //---------------------------------------------
+  document.querySelector("#btn-send").addEventListener("click", ()=>{
+    // Canvasのデータを取得
+    const canvas = board.toDataURL("image/png");  // DataURI Schemaが返却される
+
+    // 送信情報の設定
+    const param  = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json; charset=utf-8"
+      },
+      body: JSON.stringify({data: canvas})
+    };
+
+    // サーバへ送信
+    sendServer(SAVE_URL, param);
+  });
+};
