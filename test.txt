@@ -28,11 +28,30 @@
 </body>
 </html>
 
-
+//キャンバスの固定サイズ。横:縦=4:3が望ましい。
 const CANVAS_WIDTH = "600";
 const CANVAS_HEIGHT = "450";
 
-var Banner = function(label, bgcolor, fontsize, fontstyle, fontcolor, text, width, height, px, py, horizontalAlign, verticalAlign) {
+/*
+Banner      :Canvasにテキストを書ける四角のエリアとその入力フォームを生成するオブジェクト。
+〜変数〜
+label       :エリアの役割名。右側の入力フォームに表示。
+bgcolor     :背景色 ex) "#000000"
+fontsize    :フォントサイズ ex) 24
+fontstyle   :フォントの種類 ex) "メイリオ"
+fontcolor   :フォントの種類 ex) "#FFFFFF"
+text        :描画するテキスト
+width       :Bannerの横幅
+height      :Bannerの縦幅
+px          :Bannerのx方向の描画位置
+py          :Bannerのy方向の描画位置
+paddingX    :文字を描画する際のBannerのx方向のパディング
+paddingY    :文字を描画する際のBannerのy方向のパディング
+horizontalAlign :Bannerの水平方向のアライン
+verticalAlign   :Bannerの垂直方向のアライン
+
+*/
+var Banner = function(label, bgcolor, fontsize, fontstyle, fontcolor, text, width, height, px, py, paddingX, paddingY,  horizontalAlign, verticalAlign) {
     
     //初期処理
     this.label = label;
@@ -45,6 +64,8 @@ var Banner = function(label, bgcolor, fontsize, fontstyle, fontcolor, text, widt
     this.height = height;
     this.px = px;
     this.py = py;
+    this.paddingX = paddingX;
+    this.paddingY = paddingY;
     this.horizontalAlign = horizontalAlign;
     this.verticalAlign = verticalAlign;
 
@@ -86,23 +107,65 @@ Banner.prototype = {
         context.fillStyle = this.fontcolor;
         context.textBaseline = "top";
 
+        //paddingを考慮してテキスト描画の有効エリアを再設定。
+        const epx = this.px + this.paddingX;
+        const epy = this.py + this.paddingY;
+        const eWidth = this.width - this.paddingX * 2;
+        const eHeight = this.height - this.paddingY * 2;
+
         //改行に対応します。
-        var textNl = this.text.split('\n');
-        textNl.forEach(function(textEl, index){
-            console.log(textEl);
-            var textWidth = context.measureText(textEl).width ;
-            var textHeight =  context.measureText(textEl).actualBoundingBoxAscent + context.measureText(textEl).actualBoundingBoxDescent
-            
-            var x = this.px;
-            var y = this.py;
+        //まずバナーの高さから改行数の最大を計算
+        var i = 0;
+        var textHeight =  context.measureText('あ').width;
+        var maxRowNumber = 1;
+
+        while((maxRowNumber + 1) * textHeight <= eHeight) {
+            maxRowNumber++;
+        }
+        //文章の長さがバナーの幅を超える時か改行コードがある時は文字列を分割。
+        var textNl = [];
+        var tempText = "";
+        var charArray = this.text.split("");
+        //1文字ずつに分解して見ていきます。
+        for(i=0; i < charArray.length; i++) {
+            //最大行数を超えるとtextNlに追加しないようにします。
+            if(textNl.length >= maxRowNumber) {
+                break;
+            }
+            //改行コードがあれば次の行へ。
+            if(charArray[i] == "\n") {
+                textNl.push(tempText);
+                tempText = "";
+                continue;
+            }
+            //描画するときに文字の幅がテキストの有効エリアを超えていれば改行する。
+            if(context.measureText(tempText).width < eWidth) {
+                tempText += charArray[i];
+            } else {
+                textNl.push(tempText);
+                tempText = "";
+                continue;
+            }
+        }
+        //最後の一行を描画
+        if(tempText.length > 0) {
+            textNl.push(tempText);
+        }
+
+        for(i=0; i < textNl.length; i++) {
+            var textWidth = context.measureText(textNl[i]).width ;
+            var x = epx;
+            var y = epy;
+            //中央寄せかによって描画位置を変えます。
             if(this.horizontalAlign == "center") {
                 x = (this.width - textWidth) / 2;
             }
             if(this.verticalAlign == "center") {
-                y = this.py + (this.height - textHeight * index) / 2;
+                y = this.py + (this.height - textHeight * textNl.length) / 2 + textHeight * i;
             }
-            context.fillText(textEl, x, y, this.width);
-        }, this);
+
+            context.fillText(textNl[i], x, y, this.width);
+        }
     },
     setText : function(text) {
         this.text = text;
@@ -118,6 +181,10 @@ Banner.prototype = {
     }
 }
 
+function selectFormat(type) {
+    c(type);
+}
+
 window.onload = ()=>{
 
     const board = document.getElementById("board");
@@ -125,15 +192,15 @@ window.onload = ()=>{
     board.height = CANVAS_HEIGHT;
     
     var BannerArray = [];
-    BannerArray[0] = new Banner("Before", "#0FFFFF", 30, "メイリオ", "#0000FF", "goodbye", CANVAS_WIDTH, CANVAS_HEIGHT * 0.2, 0, 0, "left", "center");
-    BannerArray[1] = new Banner("タイトル", "#888888", 40, "メイリオ", "#000000", "Title", CANVAS_WIDTH, CANVAS_HEIGHT * 0.2, 0, CANVAS_HEIGHT * 0.2, "center", "center");
-    BannerArray[2] = new Banner("内容２", "#000FFF", 20, "メイリオ", "#000000", "hoge", CANVAS_WIDTH, CANVAS_HEIGHT * 0.6, 0, CANVAS_HEIGHT * 0.4, "left", "center");
+    BannerArray[0] = new Banner("Before", "#0FFFFF", 30, "メイリオ", "#0000FF", "goodbye", CANVAS_WIDTH, CANVAS_HEIGHT * 0.2, 0, 0, 10, 10, "left", "center");
+    BannerArray[1] = new Banner("タイトル", "#888888", 40, "メイリオ", "#000000", "Title", CANVAS_WIDTH, CANVAS_HEIGHT * 0.2, 0, CANVAS_HEIGHT * 0.2, 30, 10, "center", "center");
+    BannerArray[2] = new Banner("内容２", "#000FFF", 20, "メイリオ", "#000000", "hoge", CANVAS_WIDTH, CANVAS_HEIGHT * 0.6, 0, CANVAS_HEIGHT * 0.4, 10, 10, "left", "center");
     
     const messages = document.getElementsByClassName("text-message");
     const colorTexts = document.getElementsByClassName("color-text");
     const colorBgs = document.getElementsByClassName("color-bg");
     const fontSizes = document.getElementsByClassName("font-size");
-
+    const format = document.getElementById('format');
 
     // 文字入力のイベントを設定
     Array.prototype.forEach.call(messages, function(message, index) {      
@@ -172,6 +239,10 @@ window.onload = ()=>{
         e.preventDefault();
     });
 
+    format.addEventListener("change", ()=>{
+        c("hoge");
+    });
+
   //---------------------------------------------
   // 保存ボタンが押されたらサーバへ送信する
   //---------------------------------------------
@@ -192,3 +263,7 @@ window.onload = ()=>{
     sendServer(SAVE_URL, param);
   });
 };
+
+function c(str) {
+    console.log(str);
+}
