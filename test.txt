@@ -8,6 +8,17 @@
 </head>
 <body>
 <div id="container-fluid">
+    <section class="row">
+        <div class="col-md-4"></div>
+        <div class="col-md-2">
+            <select class="form-control" id="format">
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-control" id="theme"></select>
+        </div>
+        <div class="col-md-4"></div>
+    </section>
     <div class="row">
         <div class="col-md-6">
             <canvas id="board"></canvas>
@@ -21,12 +32,13 @@
     </div>
 </div>
 <script src="js/app.js"></script>
- <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
- <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
- <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
 
 </body>
 </html>
+
 
 //キャンバスの固定サイズ。横:縦=4:3が望ましい。
 const CANVAS_WIDTH = "600";
@@ -74,13 +86,18 @@ var Banner = function(label, bgcolor, fontsize, fontstyle, fontcolor, text, widt
     var inputFormHtml =
         `
             <p>${this.label}</p>
-            <span>文字色:</span>
-            <input class="color-text" type="color" value=${this.fontcolor}>
-            <span>背景色:</span>
-            <input class="color-bg" type="color" value=${this.bgcolor}>
-            <span>フォントサイズ:</span>
-            <input class="font-size" type="number" value=${this.fontsize}>
-            <br>
+            <div class="accordion">
+                <p class="menu js-menu">スタイル</p>
+                <div class="contents">
+                    <span>文字色:</span>
+                    <input class="color-text" type="color" value=${this.fontcolor}>
+                    <span>背景色:</span>
+                    <input class="color-bg menu js-menu" type="color" value=${this.bgcolor}>
+                    <span>フォントサイズ:</span>
+                    <input class="font-size menu js-menu" type="number" value=${this.fontsize}>
+                    <br>
+                </div>
+            </div>
             <textarea type="text" class="text-message" placeholder="文字を入力してください">${this.text}</textarea>
             <br><br>
         `;
@@ -103,7 +120,7 @@ Banner.prototype = {
         context.fillRect(this.px, this.py, this.width, this.height);
         
         //ここから下はテキストの描画
-        context.font = `${this.fontsize}px ${this.fontstyle}`;
+        context.font = ` ${this.fontsize}px ${this.fontstyle}`;
         context.fillStyle = this.fontcolor;
         context.textBaseline = "top";
 
@@ -155,10 +172,12 @@ Banner.prototype = {
         for(i=0; i < textNl.length; i++) {
             var textWidth = context.measureText(textNl[i]).width ;
             var x = epx;
-            var y = epy;
+            var y = epy + textHeight * i;
             //中央寄せかによって描画位置を変えます。
             if(this.horizontalAlign == "center") {
-                x = (this.width - textWidth) / 2;
+                x = this.px + (this.width - textWidth) / 2;
+            } else if(this.horizontalAlign == "right") {
+                x = this.px + this.width - textWidth;
             }
             if(this.verticalAlign == "center") {
                 y = this.py + (this.height - textHeight * textNl.length) / 2 + textHeight * i;
@@ -181,21 +200,42 @@ Banner.prototype = {
     }
 }
 
-function selectFormat(type) {
-    c(type);
-}
+//テーマカラーのデータを保存。typeによってBannerArrayの長さと色の要素数を揃える。
+const colorList = 
+{
+    "type1": {
+        "Default": ["#000000", "#000FFF", "#888888"],
+        "hot": ["#0FFFFF", "#000FFF", "#888888"]
+    },
+    "type2": {
+        "Default": ["#0FFFFF", "#000FFF", "#888888"],
+        "autumn": ["#000000", "#000FFF", "#FFFFFF"]
+    },
+    "type3": {
+        "Default": ["#0FFFFF", "#000FFF", "#888888"]
+    }
+};
 
 window.onload = ()=>{
 
     const board = document.getElementById("board");
     board.width = CANVAS_WIDTH;
     board.height = CANVAS_HEIGHT;
-    
+    for(key in colorList) {
+        const format = document.getElementById('format');
+        let type = document.createElement('option');
+        type.innerHTML = key;
+        format.appendChild(type);
+    };
+    createColorTheme(colorList["type1"]);
+
     var BannerArray = [];
     BannerArray[0] = new Banner("Before", "#0FFFFF", 30, "メイリオ", "#0000FF", "goodbye", CANVAS_WIDTH, CANVAS_HEIGHT * 0.2, 0, 0, 10, 10, "left", "center");
     BannerArray[1] = new Banner("タイトル", "#888888", 40, "メイリオ", "#000000", "Title", CANVAS_WIDTH, CANVAS_HEIGHT * 0.2, 0, CANVAS_HEIGHT * 0.2, 30, 10, "center", "center");
-    BannerArray[2] = new Banner("内容２", "#000FFF", 20, "メイリオ", "#000000", "hoge", CANVAS_WIDTH, CANVAS_HEIGHT * 0.6, 0, CANVAS_HEIGHT * 0.4, 10, 10, "left", "center");
+    BannerArray[2] = new Banner("内容２", "#000FFF", 20, "メイリオ", "#000000", "hoge", CANVAS_WIDTH, CANVAS_HEIGHT * 0.6, 0, CANVAS_HEIGHT * 0.4, 10, 10, "right", "upper");
     
+    setColorTheme(BannerArray, colorList["type1"]["Default"]);
+
     const messages = document.getElementsByClassName("text-message");
     const colorTexts = document.getElementsByClassName("color-text");
     const colorBgs = document.getElementsByClassName("color-bg");
@@ -240,8 +280,17 @@ window.onload = ()=>{
     });
 
     format.addEventListener("change", ()=>{
-        c("hoge");
+        createColorTheme(colorList[format.value]);
     });
+    document.getElementById('theme').addEventListener("change", ()=>{
+        setColorTheme(BannerArray, colorList[format.value][document.getElementById('theme').value]);
+    });
+
+    const menu = document.querySelectorAll(".js-menu");
+
+    for (let i = 0; i < menu.length; i++) {
+    menu[i].addEventListener("click", toggle);
+    }
 
   //---------------------------------------------
   // 保存ボタンが押されたらサーバへ送信する
@@ -266,4 +315,29 @@ window.onload = ()=>{
 
 function c(str) {
     console.log(str);
+}
+
+function toggle() {
+    const content = this.nextElementSibling;
+    this.classList.toggle("is-active");
+    content.classList.toggle("is-open");
+}
+
+//typeが選択されたときに、それに合わせたカラーテーマのプルダウンを表示させる。
+function createColorTheme(themeList) {
+    const theme = document.getElementById('theme');
+    theme.innerHTML = "";
+    for(key in themeList) {
+        let option = document.createElement('option');
+        option.innerHTML = key;
+        theme.appendChild(option);
+    };
+}
+
+//テーマを選んだときに資料に色をセット
+function setColorTheme(BannerArray, colors){
+    for(var i=0; i<colors.length; i++) {
+        BannerArray[i].setBgcolor(colors[i]);
+        BannerArray[i].drawBanner();
+    }
 }
